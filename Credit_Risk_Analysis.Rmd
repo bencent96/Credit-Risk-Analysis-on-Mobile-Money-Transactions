@@ -1,0 +1,126 @@
+---
+title: "Credit Risk Analysis of Mobile Money"
+author: "Benjamin Ekow Attabra"
+date: "September 2024"
+output:
+  html_document: default
+  pdf_document: default
+---
+```
+## Introduction
+
+This analysis aims to assess credit risk based on mobile money transaction data. Specifically, we will evaluate the cash flow of the user by analyzing inflows (deposits) and outflows (expenditures) and provide insights into potential credit risk factors.
+
+## 1. Data Preparation
+
+```{r setup, include=FALSE}
+# Load necessary libraries
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(knitr)
+
+# Load the data
+transactions <- read_csv("transactions.csv")
+
+# Convert Transaction Date to Date type
+transactions$`Transaction Date` <- dmy(transactions$`Transaction Date`)
+
+# View the structure of the data
+str(transactions)
+
+# Display the first few rows of the data
+head(transactions)
+```
+
+## 2. Exploratory Data Analysis (EDA)
+
+### Summary Statistics
+
+```{r summary-stats}
+# Calculate summary statistics for inflows and outflows
+summary(transactions$Inflows)
+summary(transactions$Outflows)
+
+# Summary statistics for Fees and E-Levy
+summary(transactions$Fees)
+summary(transactions$E.Levy)
+```
+
+### Visualizing Transaction Trends
+
+```{r transaction-trends, echo=FALSE}
+# Summarize daily inflows and outflows
+daily_summary <- transactions %>%
+  group_by(`Transaction Date`, Type) %>%
+  summarise(Total_Amount = sum(Inflows + Outflows))
+
+# Plotting inflows and outflows over time
+ggplot(data = daily_summary, aes(x = `Transaction Date`, y = Total_Amount, color = Type)) +
+  geom_line() +
+  labs(title = "Daily Inflows and Outflows Over Time",
+       x = "Date",
+       y = "Amount",
+       color = "Transaction Type") +
+  theme_minimal()
+```
+
+## 3. Credit Risk Metrics
+
+### Cash Flow Analysis
+
+```{r cash-flow-analysis}
+# Calculate net cash flow (Inflows - Outflows)
+transactions <- transactions %>%
+  mutate(Net_Cash_Flow = Inflows - Outflows)
+
+# Summary of net cash flow
+summary(transactions$Net_Cash_Flow)
+
+# Plotting net cash flow over time
+ggplot(transactions, aes(x = `Transaction Date`, y = Net_Cash_Flow)) +
+  geom_line(color = "blue") +
+  labs(title = "Net Cash Flow Over Time",
+       x = "Date",
+       y = "Net Cash Flow") +
+  theme_minimal()
+```
+
+### Delinquency Risk
+
+```{r delinquency-risk}
+# Check for days with negative net cash flow (potential credit risk)
+delinquent_days <- transactions %>%
+  filter(Net_Cash_Flow < 0)
+
+# Display delinquent days
+kable(delinquent_days, caption = "Days with Negative Net Cash Flow")
+```
+
+```{r}
+# Load the dataset
+transactions <- read_csv("transactions.csv")
+
+# Calculate Net Cash Flow (Inflows - Outflows)
+transactions <- transactions %>%
+  mutate(Net_Cash_Flow = Inflows - Outflows)
+
+# Calculate total net cash flow for the entire period
+total_net_cashflow <- sum(transactions$Net_Cash_Flow)
+
+# Determine lending decision based on net cash flow
+if (total_net_cashflow > 0) {
+  lending_decision <- "Lend"
+} else {
+  lending_decision <- "Do not lend"
+}
+
+# Output the results
+cat("The total net cash flow calculated from the mobile money transactions is: ", total_net_cashflow, "\n")
+cat("Given the total net cash flow of ", total_net_cashflow, ", the conclusion drawn from this analysis is: '", lending_decision, "'.\n\n")
+```
+
+## 4. Conclusion
+
+This report provided an overview of the user's cash flow through mobile money transactions. By examining inflows, outflows, fees, and net cash flow over time, we identified key periods of potential credit risk based on negative cash flow. Further recommendations for improving cash management or extending credit can be made based on these results.
+```
